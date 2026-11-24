@@ -1,0 +1,7 @@
+# WPA2 station authentication
+
+The station build embeds the RSN supplicant from hostap 2.12 under its upstream BSD license. The distribution archive has SHA-256 `08e23937e16d0155e55cab2b51f51fbe10d80a1aa91c4e15442645059b737ef6`. The download was checked against the independently published Buildroot digest before extraction. Source and its license are in `security/vendor/`. [Upstream release](https://w1.fi/wpa_supplicant/) · [Buildroot digest](https://lists.buildroot.org/pipermail/buildroot/2026-August/807926.html)
+
+The caller associates with the selected access point before starting the supplicant. The station accepts RSN-PSK with CCMP and an access point that permits association without protected management frames. Passphrases use Apple's CommonCrypto PBKDF2 with the selected SSID as salt. The callbacks carry EAPOL replies and install validated temporal keys. The caller owns the association timeout, clears its credential buffer, and clears adapter keys on disconnect or failure. The supplicant disables debug output, reads randomness from the OS and keeps its session state in memory.
+
+From the project root run `CAL_WPA_TEST=1 sh security/build.sh "$PWD/security/build-new"` with a fresh output directory. The test runs a hostap authenticator and supplicant against each other in memory. Both exchange all four messages and must finish with matching pairwise and group keys. No radio or password prompt is involved.

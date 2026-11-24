@@ -1,0 +1,16 @@
+.DS_Store
+*.o
+*.a
+*.dSYM/
+/build-*.*/
+/beacon/build-*/
+/station/build-*/
+/security/build-*/
+/radio/*-test-*/
+/radio/*-check-*/
+/radio/*-asan-*/
+/radio/named-station-*/
+/radio/upstream/*.json
+# The maintained build/test subset is tracked. A full local extraction and
+# release archive may coexist with it without being added to later commits.
+/security/vendor/
