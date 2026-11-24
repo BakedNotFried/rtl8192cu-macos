@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-// Only the explicit --join-saved path asks for the exact CalNet password.
+// Only the explicit --join-saved path asks for the saved password for the selected SSID.
 size_t calnet_secret(bool saved, const uint8_t *name, size_t length, uint8_t out[65]) {
     @autoreleasepool {
         NSString *secret = nil;

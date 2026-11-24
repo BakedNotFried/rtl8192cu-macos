@@ -10,6 +10,7 @@
 /radio/*-check-*/
 /radio/*-asan-*/
 /radio/named-station-*/
+/radio/station-states-*/
 /radio/upstream/*.json
 # The maintained build/test subset is tracked. A full local extraction and
 # release archive may coexist with it without being added to later commits.

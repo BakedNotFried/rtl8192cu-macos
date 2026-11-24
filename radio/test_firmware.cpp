@@ -132,6 +132,9 @@ static void exercise_station(rtl_radio *radio, FakeUSB &dev, bool named) {
     else
         assert(rtl_station_prepare(radio, ap, 6, 2, FakeUSB::bulk_cb, &dev, own) == 0);
     assert(own[0] == 2 && own[5] == 9);
+    assert(dev.get(R92C_TXPAUSE,1) == 0);
+    const auto filter = R92C_RCR_CBSSID_BCN | R92C_RCR_CBSSID_DATA;
+    assert(!(dev.get(R92C_RCR,4) & filter));
     assert(rtl_radio_tune(radio, 7) != 0);
     frame[0] = 0xb0;
     std::memcpy(frame+4,ap,6);
@@ -153,6 +156,7 @@ static void exercise_station(rtl_radio *radio, FakeUSB &dev, bool named) {
     frame[34] ^= 1;
     assert(rtl_station_assoc(radio,frame,28+sizeof(ies)) == 0 && dev.queue == 0);
     assert(rtl_station_link(radio,1,100) == 0);
+    assert((dev.get(R92C_RCR,4) & filter) == filter);
     uint8_t tk[16] = {5}, gtk[16] = {7}, ethernet[64]{};
     std::memcpy(ethernet + 6, own, 6);
     ethernet[12] = 8;

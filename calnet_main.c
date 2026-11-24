@@ -27,11 +27,14 @@ static bool run(struct pipes *p, void *context) {
     return ok;
 }
 int main(int argc, char **argv) {
-    if (argc < 2 || argc > 3) {
-        fprintf(stderr,"Usage: %s --discover|--associate|--join|--join-saved [exact SSID]\n",argv[0]);
+    const char *ssid = argc == 3 ? argv[2] : NULL;
+#ifdef LEGACY_CALNET_DEFAULT
+    if (argc == 2) ssid = "CalNet";
+#endif
+    if (!ssid) {
+        fprintf(stderr,"Usage: %s --discover|--associate|--join|--join-saved <exact-SSID>\n",argv[0]);
         return 2;
     }
-    const char *ssid = argc == 3 ? argv[2] : "CalNet";
     if (!*ssid || strlen(ssid)>32 || strcspn(ssid,"\n\r\t")!=strlen(ssid)) return 2;
     bool join = !strcmp(argv[1], "--join") || !strcmp(argv[1], "--join-saved") ||
                 !strcmp(argv[1], "--associate");

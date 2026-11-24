@@ -27,6 +27,7 @@ static bool hardware_ok(rtl_radio *r, int rc, const char *what) {
 }
 static bool management(struct connection *c, bool auth) {
     const char *name = auth ? "Open System authentication" : "Association";
+    unsigned submitted = 0, addressed_responses = 0;
     for (unsigned attempt = 0; attempt < 3 && !cal_cancelled; ++attempt) {
         uint8_t tx[256];
         size_t n = auth ? cal_auth_request(c->station,tx,sizeof(tx)) :
@@ -34,12 +35,17 @@ static bool management(struct connection *c, bool auth) {
         if (!n) return false;
         int rc = auth ? rtl_station_auth(c->radio,tx,n) : rtl_station_assoc(c->radio,tx,n);
         if (!hardware_ok(c->radio,rc,name)) return false;
+        ++submitted;
         uint64_t until = cal_millis() + 1800;
         while (!cal_cancelled && cal_millis() < until) {
             struct incoming rx;
             int result = cal_read(c->usb,&rx);
             if (result < 0) return false;
             if (!result) continue;
+            if (rx.mpdu[0] == (auth ? 0xb0 : 0x10) &&
+                !memcmp(rx.mpdu + 4, c->station->mac, 6) &&
+                !memcmp(rx.mpdu + 10, c->station->bssid, 6))
+                ++addressed_responses;
             enum cal_event event = cal_station_receive(c->station,rx.mpdu,rx.size,
                                                         c->station->channel,NULL);
             if (event == CAL_REJECTED || event == CAL_DISCONNECTED) {
@@ -52,7 +58,10 @@ static bool management(struct connection *c, bool auth) {
             }
         }
     }
-    fprintf(stderr,"%s: no matching AP response within the retry window\n",name);
+    fprintf(stderr,"%s: %u USB submissions, %u addressed replies, no accepted response\n",
+            name, submitted, addressed_responses);
+    char snapshot[768];
+    if (!rtl_radio_snapshot(c->radio,snapshot,sizeof(snapshot))) fprintf(stderr,"%s\n",snapshot);
     return false;
 }
 

@@ -1,10 +1,12 @@
-# RTL8192CU USB Wi-Fi for Apple silicon
+# Stretch 2.4 GHz Wi-Fi on Apple silicon
 
-A macOS command-line prototype for the Realtek **RTL8192CU** USB adapter, device ID **`0bda:8178`**. Use it to identify the chip, receive 2.4 GHz beacons, and test whether the dongle can join a WPA2-Personal network.
+Use this macOS command-line prototype to test a **Realtek RTL8192CU** USB adapter (`0bda:8178`) with the **Stretch router’s 2.4 GHz network**. The station accepts the exact network name (SSID) you supply. Discovery, association, password lookup and WPA2 authentication all use that name.
 
-**Current status:** the dongle booted its firmware and received real beacons on an M1 Max MacBook Pro running macOS 27.2.1. The WPA2 four-way handshake passed offline against a hostap authenticator. **Joining a physical WPA2 access point and exchanging encrypted traffic are still unverified.** Other MacBook generations also await hardware testing.
+**Stretch field status:** awaiting a test with the router present. Confirm its exact 2.4 GHz SSID and security mode on the router or with its operator. The previously seen name ending in `-5G` does not establish the 2.4 GHz network name.
 
-Each command runs in the foreground, uses the dongle for one test, then shuts it down. Ordinary Mac apps continue using their existing network connection. A persistent network interface and companion app are future work.
+**What has worked:** on an M1 Max MacBook Pro running macOS 27.2.1, the dongle joined a separate physical WPA2-Personal access point and exchanged encrypted traffic. See the [personal trial and reproduction commands](docs/testing/README.md). Other MacBook generations await hardware testing.
+
+Each run tests the dongle, then shuts it down. Ordinary Mac apps keep using their existing network connection. A persistent network interface and companion app are future work.
 
 ## What you need
 
@@ -15,7 +17,7 @@ Each command runs in the foreground, uses the dongle for one test, then shuts it
 
 The probe and station use Apple's existing USB APIs. Builds run locally without installing a driver extension, changing network settings, or downloading dependencies. Run the commands as your regular user.
 
-## First run
+## Test the Stretch router
 
 **1. Get the source.** With a GitHub account that has access to this private repository:
 
@@ -30,16 +32,17 @@ cd rtl8192cu-macos
 probe="$(sh build-probe.sh)" && "$probe"
 ```
 
-**3. Build the station tool and check your network.** Replace the example name with the exact, case-sensitive SSID. Keep these shell variables in the same Terminal window for the following commands.
+**3. With the Stretch router nearby, enter its exact 2.4 GHz SSID.** Type the network name at the prompt, then press Return. Keep this Terminal window open for the join step.
 
 ```sh
-ssid='My WPA2 test network'
-station="$(sh build-calnet.sh)" && "$station" --discover "$ssid"
+printf 'Stretch 2.4 GHz network name: '
+IFS= read -r ssid
+station="$(sh build-station.sh)" && "$station" --discover "$ssid"
 ```
 
 Discovery listens for beacons on channels 1–13. A compatible result includes `compatible 2.4 GHz WPA2-Personal/CCMP beacon` and the channel. Seeing the exact name alone confirms reception. The advertised security determines whether the join test can proceed.
 
-**4. Try a join.** Use **one** of these credential methods after discovery finds a compatible AP.
+**4. Test the Stretch link.** Use **one** of these credential methods after discovery finds a compatible AP.
 
 | Where the password is | Command |
 | --- | --- |
@@ -86,8 +89,10 @@ Each build uses a new directory inside the checkout and prints the executable pa
 | Handshake completes but the DHCP proof times out | Confirm DHCPv4 is available on the test network. Record the last successful milestone when reporting the result. |
 | RF chain B reports an unverified channel | This occurred during successful physical beacon tests. Chain A echoed the requested channel. Independent operation of chain B remains unverified. |
 
-## Hardware evidence and source credits
+## Record the Stretch result
 
-Two consecutive tests on the M1 Max MacBook Pro (`MacBookPro18,2`) loaded firmware into volatile device memory and received a broadcast beacon. The adapter was shut down and reopened between the tests, with channels 1 and 6 requested. A later live scan identified a WPA3-only access point and exited before credential access. The offline WPA2 tests completed all four handshake messages, with matching pairwise and group keys at both simulated peers.
+For the first field run, record the Mac model, macOS version, router model, advertised channel and the last successful milestone from the table above. The matching DHCP offer verifies the encrypted link to the Stretch network. Application-level communication with the Stretch device is a separate test.
+
+## Source credits
 
 The hardware implementation uses [OpenBSD rtwn/urtwn](https://github.com/openbsd/src/tree/c402c876540cad83461325f87a703ff2c9c32757) and the [Realtek firmware license](radio/upstream/urtwn-license). The repository includes the hostap sources needed to build and test the supplicant. See [supplicant provenance and licensing](security/UPSTREAM.md) and the [DriverKit distribution investigation](DISTRIBUTION.md).

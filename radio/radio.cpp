@@ -320,7 +320,8 @@ extern "C" int rtl_radio_snapshot(rtl_radio *radio, char *text, size_t size) {
         std::snprintf(text, size,
             "board=%u CR=%04x TXPAUSE=%02x MSR=%02x RCR=%08x MAP=%04x/%04x/%04x "
             "DMA=%04x USB=%02x RXPKT=%08x DMA_STATUS=%08x FIFO=%08x PTR=%08x "
-            "RFMOD=%08x RFPARAM=%08x TRXPATH=%08x CCA=%08x AGC=%02x/%02x",
+            "RFMOD=%08x RFPARAM=%08x TRXPATH=%08x CCA=%08x AGC=%02x/%02x "
+            "MGNT_DOK=%u TX_OVERFLOW=%u",
             unsigned(radio->board_type), radio->r16(R92C_CR), radio->r8(R92C_TXPAUSE),
             radio->r8(R92C_MSR), radio->r32(R92C_RCR),
             radio->r16(R92C_RXFLTMAP0), radio->r16(R92C_RXFLTMAP1), radio->r16(R92C_RXFLTMAP2),
@@ -329,7 +330,9 @@ extern "C" int rtl_radio_snapshot(rtl_radio *radio, char *text, size_t size) {
             radio->r32(R92C_TRXFF_STATUS), radio->r32(R92C_RXFF_PTR),
             radio->r32(R92C_FPGA0_RFMOD), radio->r32(R92C_FPGA0_RFPARAM(0)),
             radio->r32(R92C_OFDM0_TRXPATHENA), radio->r32(R92E_RX_WAIT_CCA),
-            radio->r8(R92C_OFDM0_AGCCORE1(0)), radio->r8(R92C_OFDM0_AGCCORE1(1)));
+            radio->r8(R92C_OFDM0_AGCCORE1(0)), radio->r8(R92C_OFDM0_AGCCORE1(1)),
+            unsigned((radio->r32(R92C_HISR) & R92C_IMR_MGNTDOK) != 0),
+            unsigned((radio->r32(R92C_HISR) & R92C_IMR_TXFOVW) != 0));
     });
 }
 extern "C" void rtl_radio_destroy(rtl_radio *radio) {

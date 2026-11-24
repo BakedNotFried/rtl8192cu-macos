@@ -67,12 +67,20 @@ void prepare_station(const uint8_t *bssid, unsigned channel, unsigned rate,
 
     w32(R92C_BSSID, read_le32(bssid));
     w16(R92C_BSSID + 4, read_le16(bssid + 4));
-    w32(R92C_RCR, (r32(R92C_RCR) & ~R92C_RCR_AAP) | R92C_RCR_CBSSID_BCN | R92C_RCR_CBSSID_DATA);
+    // Pre-association in rtwn_newstate(SCAN/AUTH): no hardware BSSID checks
+    // until RUN. The station still checks the exact AP and own destination.
+    w32(R92C_RCR, r32(R92C_RCR) & ~(R92C_RCR_AAP | R92C_RCR_CBSSID_BCN | R92C_RCR_CBSSID_DATA));
     // Association response, disassociation, authentication and deauthentication.
     w16(R92C_RXFLTMAP0, (1u << 1) | (1u << 10) | (1u << 11) | (1u << 12));
     w16(R92C_RXFLTMAP2, 0);
     w32(R92C_RRSR, RW(r32(R92C_RRSR), R92C_RRSR_RATE_BITMAP, (1u << station.tx_rate)));
     w16(R92C_RL, SM(R92C_RL_SRL, 7u) | SM(R92C_RL_LRL, 7u));
+    // USB defaults from OpenBSD rtwn_edca_init. The per-AC EDCA register
+    // table is already loaded by rtl8192cu_mac during radio startup.
+    for (uint16_t reg : {R92C_SPEC_SIFS, R92C_MAC_SPEC_SIFS, R92C_SIFS_CCK,
+                         R92C_SIFS_OFDM, R92C_RESP_SIFS_CCK, R92C_RESP_SIFS_OFDM})
+        w16(reg, 0x100a);
+    w32(R92C_EDCA_RANDOM_GEN, arc4random());
     w8(R92C_ACKTO, 0x40);
     w8(R92C_HWSEQ_CTRL, 0xff);
     for (unsigned chain = 0; chain < 2; ++chain) {
@@ -81,8 +89,10 @@ void prepare_station(const uint8_t *bssid, unsigned channel, unsigned rate,
     }
     w32(R92C_CAMCMD, R92C_CAMCMD_POLLING | R92C_CAMCMD_CLR);
     wait_cam();
-    // Only enable management and best effort for this station.
-    w8(R92C_TXPAUSE, R92C_TXPAUSE_ALL & ~(R92C_TXPAUSE_MGNT | R92C_TXPAUSE_AC_BE));
+    // Unpause the chip scheduler for station operation. A bit mask that
+    // pauses "beacon/high/management" still gates the management queue even
+    // when the individual management bit is clear.
+    w8(R92C_TXPAUSE, 0);
     station.phase = StationState::selected;
 }
 
@@ -168,6 +178,7 @@ void station_link(unsigned aid, unsigned interval) {
     constexpr uint16_t aid_reg = 0x06a8;
     w16(aid_reg, (r16(aid_reg) & 0xc000) | aid);
     w16(R92C_BCN_INTERVAL, interval);
+    w32(R92C_RCR, r32(R92C_RCR) | R92C_RCR_CBSSID_BCN | R92C_RCR_CBSSID_DATA);
     w8(R92C_BCN_CTRL, r8(R92C_BCN_CTRL) & ~R92C_BCN_CTRL_DIS_TSF_UDT0);
     w16(R92C_RXFLTMAP2, (1u << 0) | (1u << 8)); // legacy/QoS data
     station.phase = StationState::linked;
