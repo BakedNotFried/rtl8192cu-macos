@@ -7,7 +7,7 @@ Connect a Realtek RTL8192CU USB Wi-Fi dongle to the Stretch router from an Apple
 ## What you need
 
 - An Apple silicon Mac with Apple Command Line Tools and a Realtek RTL8192CU dongle with USB ID `0bda:8178`.
-- The exact name and password of the Stretch router’s **2.4 GHz** network. It must broadcast its name, offer **WPA2-Personal with AES/CCMP**, allow optional or disabled protected management frames, and provide DHCPv4.
+- The exact name and password of the Stretch router’s **2.4 GHz** network. It must broadcast its name and offer **WPA2-Personal with AES/CCMP** with protected management frames optional or disabled. The companion uses DHCPv4 to get an address automatically.
 
 ## Connect to Stretch
 
@@ -29,10 +29,45 @@ IFS= read -r ssid
 
 If the password is saved on this Mac, use `"$station" --connect-saved "$ssid"` for the last line. After Wi-Fi authentication, approve the macOS administrator prompt to create the temporary Ethernet connection. This installs no software.
 
-**3. Use both connections.** Leave built-in Wi-Fi on for internet access. When the station prints `Host link ready` and an IPv4 address, open the Stretch service at the address supplied by the robot’s operator. Keep the station running while you use it.
-
-macOS chooses a connection for each destination. This setup works best when Stretch and your internet Wi-Fi use different IP subnets. To check the path to the robot, run `/sbin/route -n get ROBOT_IP` with its actual IPv4 address. The `interface` line should match the `feth` name printed by the station.
+**3. Use both connections.** Leave built-in Wi-Fi on for internet access. When the station prints `Host link ready` and an IPv4 address, open the Stretch service at the address supplied by the robot’s operator. Keep the station running while you use it. This setup works best when Stretch and your internet Wi-Fi use different IP subnets.
 
 Press **Control-C** to disconnect and release the temporary interfaces. To reconnect, run the same connect command again. The older `--join` and `--join-saved` commands run a short radio test and exit.
+
+## Check the connection
+
+The station’s Terminal shows the Wi-Fi network name, channel, and WPA2 status. Look for the line starting with `Host interface:` to find the dongle’s macOS interface name. In a **second Terminal**, set `dongle` to that name. The example uses `feth0`. Check the name again after reconnecting.
+
+```sh
+dongle=feth0
+ipconfig getsummary "$dongle"
+```
+
+The summary shows the Mac’s IPv4 address on Stretch and the settings supplied by the router, including the subnet mask, gateway, and DNS servers. For just the Mac’s address, run `ipconfig getifaddr "$dongle"`.
+
+To check which connection macOS will use for the robot, replace `ROBOT_IP` with the **robot’s IPv4 address**. Look for the `interface:` line in the result. It should match the dongle’s interface name.
+
+```sh
+route -n get ROBOT_IP
+```
+
+## Change connection settings
+
+**Set a static IPv4 address.** In the second Terminal, replace `RESERVED_IP` with the address the Stretch operator assigned to **your Mac** and `SUBNET_MASK` with their dotted mask (for example, `255.255.255.0`). This replaces DHCP on the dongle for the current session and requires administrator approval. Manual mode sets only the address and mask.
+
+```sh
+sudo ipconfig set "$dongle" MANUAL RESERVED_IP SUBNET_MASK
+```
+
+**Return to automatic addressing.** Run this in the same Terminal to request a fresh DHCP lease. The companion also starts with DHCP each time you reconnect.
+
+```sh
+sudo ipconfig set "$dongle" DHCP
+```
+
+**Switch Wi-Fi networks.** In the **original Terminal**, press **Control-C**, then run the command below with the new network’s exact name inside the quotes. Use `--connect-saved` if its password is already saved on this Mac.
+
+```sh
+"$station" --connect "New network name"
+```
 
 [Personal CalNet trial](docs/testing/README.md) · [How the temporary interface works](host_link/README.md) · [Hardware source](https://github.com/openbsd/src/tree/c402c876540cad83461325f87a703ff2c9c32757) · [Firmware license](radio/upstream/urtwn-license) · [Supplicant credits](security/UPSTREAM.md)
