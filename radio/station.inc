@@ -179,6 +179,9 @@ void station_link(unsigned aid, unsigned interval) {
     w16(aid_reg, (r16(aid_reg) & 0xc000) | aid);
     w16(R92C_BCN_INTERVAL, interval);
     w32(R92C_RCR, r32(R92C_RCR) | R92C_RCR_CBSSID_BCN | R92C_RCR_CBSSID_DATA);
+    // Deliver associated AP beacons so a long-lived station can distinguish
+    // an idle link from an access point that has disappeared.
+    w16(R92C_RXFLTMAP0, r16(R92C_RXFLTMAP0) | (1u << 8));
     w8(R92C_BCN_CTRL, r8(R92C_BCN_CTRL) & ~R92C_BCN_CTRL_DIS_TSF_UDT0);
     w16(R92C_RXFLTMAP2, (1u << 0) | (1u << 8)); // legacy/QoS data
     station.phase = StationState::linked;

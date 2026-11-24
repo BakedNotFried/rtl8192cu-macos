@@ -3,6 +3,8 @@
 *.a
 *.dSYM/
 /build-*.*/
+/host_link/build-*/
+/host_link/test-*/
 /beacon/build-*/
 /station/build-*/
 /security/build-*/

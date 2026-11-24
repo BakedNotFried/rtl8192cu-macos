@@ -3,6 +3,7 @@
 #include <string.h>
 
 #ifdef CALNET_JOIN
+#include "host_link/client.h"
 bool cal_join(rtl_radio *, struct pipes *, struct cal_station *, const char *);
 #endif
 static void cancel(int sig) { (void)sig; cal_cancelled = 1; }
@@ -18,7 +19,9 @@ static bool run(struct pipes *p, void *context) {
     if (!ok) fprintf(stderr, "Initialize: %s\n", rtl_radio_error(r));
     if (ok) ok = cal_discover(r, p, &station,options->ssid);
 #ifdef CALNET_JOIN
-    if (ok && strcmp(mode, "--discover")) ok = cal_join(r, p, &station, mode);
+    if (ok && (!strcmp(mode,"--connect") || !strcmp(mode,"--connect-saved")))
+        ok = run_host_connection(r,p,&station,!strcmp(mode,"--connect-saved"));
+    else if (ok && strcmp(mode, "--discover")) ok = cal_join(r, p, &station, mode);
 #else
     (void)mode;
 #endif
@@ -32,12 +35,13 @@ int main(int argc, char **argv) {
     if (argc == 2) ssid = "CalNet";
 #endif
     if (!ssid) {
-        fprintf(stderr,"Usage: %s --discover|--associate|--join|--join-saved <exact-SSID>\n",argv[0]);
+        fprintf(stderr,"Usage: %s --discover|--associate|--join|--join-saved|--connect|--connect-saved <exact-SSID>\n",argv[0]);
         return 2;
     }
     if (!*ssid || strlen(ssid)>32 || strcspn(ssid,"\n\r\t")!=strlen(ssid)) return 2;
     bool join = !strcmp(argv[1], "--join") || !strcmp(argv[1], "--join-saved") ||
-                !strcmp(argv[1], "--associate");
+                !strcmp(argv[1], "--associate") || !strcmp(argv[1],"--connect") ||
+                !strcmp(argv[1],"--connect-saved");
 #ifndef CALNET_JOIN
     if (join) return 2;
 #endif

@@ -18,6 +18,17 @@ export TMPDIR="$out/tmp" CLANG_MODULE_CACHE_PATH="$out/cache"
     station/station.c station/test_station.c -o "$out/station-test"
 "$out/station-test"
 /usr/bin/clang -std=c11 -Wall -Wextra -Werror -fno-modules -fsanitize=address,undefined \
+    calnet_join.c test_station_link.c -o "$out/station-link-test"
+"$out/station-link-test"
+for component in helper client; do
+    /usr/bin/clang -std=c11 -Wall -Wextra -Werror -fno-modules -fsanitize=address,undefined \
+        "host_link/test_$component.c" host_link/admin_socket.c -o "$out/$component-test"
+    "$out/$component-test"
+done
+/usr/bin/clang -std=c11 -Wall -Wextra -Werror -fno-modules -fsanitize=address,undefined \
+    host_link/test_verify.c -o "$out/verify-test"
+"$out/verify-test"
+/usr/bin/clang -std=c11 -Wall -Wextra -Werror -fno-modules -fsanitize=address,undefined \
     lease_probe.c test_lease_probe.c -o "$out/lease-test"
 "$out/lease-test"
 CAL_WPA_TEST=1 sh security/build.sh "$out/wpa"

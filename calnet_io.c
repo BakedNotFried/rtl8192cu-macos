@@ -7,9 +7,15 @@ volatile sig_atomic_t cal_cancelled;
 uint64_t cal_millis(void) { return clock_gettime_nsec_np(CLOCK_MONOTONIC) / 1000000u; }
 
 int cal_read(struct pipes *p, struct incoming *packet) {
+    return cal_read_for(p, packet, 200, 350);
+}
+
+int cal_read_for(struct pipes *p, struct incoming *packet, unsigned idle_ms, unsigned total_ms) {
+    if (cal_cancelled) return 0;
     uint8_t *b = packet->buffer;
     UInt32 n = sizeof(packet->buffer);
-    IOReturn status = (*p->usb)->ReadPipeTO(p->usb, p->bulk_in, b, &n, 200, 350);
+    IOReturn status = (*p->usb)->ReadPipeTO(p->usb, p->bulk_in, b, &n, idle_ms, total_ms);
+    if (cal_cancelled && (status == kIOReturnAborted || status == kIOReturnSuccess)) return 0;
     if (status == kIOUSBTransactionTimeout || status == kIOReturnTimeout) return 0;
     if (!usb_ok("Station USB receive", status)) return -1;
     if (n < 24 || (b[1] & 0xc0)) return 0;
