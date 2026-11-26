@@ -24,10 +24,10 @@ station="$(sh build-station.sh)"
 ```sh
 printf 'Stretch 2.4 GHz network name: '
 IFS= read -r ssid
-"$station" --connect "$ssid"
+"$station" --connect-saved "$ssid"
 ```
 
-If the password is saved on this Mac, use `"$station" --connect-saved "$ssid"` for the last line. After Wi-Fi authentication, approve the macOS administrator prompt to create the temporary Ethernet connection. This installs no software.
+The password must be saved on the Mac for the last line. After Wi-Fi authentication, approve the macOS administrator prompt to create the temporary Ethernet connection. This installs no software.
 
 **3. Use both connections.** Leave built-in Wi-Fi on for internet access. When the station prints `Host link ready` and an IPv4 address, open the Stretch service at the address supplied by the robot’s operator. Keep the station running while you use it. This setup works best when Stretch and your internet Wi-Fi use different IP subnets.
 
